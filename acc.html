@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AAC Board</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f0f0f0;
+    }
+    #output {
+      font-size: 2em;
+      background: white;
+      padding: 10px;
+      margin-bottom: 10px;
+      min-height: 60px;
+      border: 2px solid #ccc;
+      word-wrap: break-word;
+    }
+    #controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    input[type="text"] {
+      font-size: 1em;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      flex-grow: 1;
+    }
+    button {
+      font-size: 1em;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      background: #e74c3c;
+      color: white;
+      cursor: pointer;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .word {
+      background: #4a90e2;
+      color: white;
+      text-align: center;
+      border-radius: 12px;
+      padding: 20px;
+      user-select: none;
+      touch-action: manipulation;
+      word-wrap: break-word;
+      white-space: normal;
+    }
+    .word:active {
+      background: #357abd;
+    }
+    .slider-section {
+      margin-bottom: 20px;
+    }
+    .slider-section label {
+      display: block;
+      font-size: 0.9em;
+      margin-bottom: 4px;
+    }
+    #keyboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+      gap: 5px;
+    }
+    .key {
+      text-align: center;
+      background: #888;
+      color: white;
+      border-radius: 8px;
+      user-select: none;
+      padding: 10px;
+      word-wrap: break-word;
+    }
+    .key:active {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+  <div id="output"></div>
+
+  <div id="controls">
+    <button onclick="clearOutput()">Clear</button>
+    <input type="text" id="newWord" placeholder="Add new word...">
+    <button onclick="addNewWord()">+ Add</button>
+    <button onclick="removeWord()">− Remove</button>
+
+  </div>
+
+  <!-- Sliders -->
+  <div class="slider-section">
+    <label for="wordSize">Word Button Size</label>
+    <input type="range" id="wordSize" min="16" max="48" value="24" onchange="updateWordSize(this.value)">
+  </div>
+
+  <div class="grid" id="buttons"></div>
+
+  <div class="slider-section">
+    <label for="keySize">Keyboard Key Size</label>
+    <input type="range" id="keySize" min="10" max="36" value="20" onchange="updateKeySize(this.value)">
+  </div>
+
+  <div id="keyboard"></div>
+
+  <script>
+    const output = document.getElementById('output');
+    const buttons = document.getElementById('buttons');
+    const keyboard = document.getElementById('keyboard');
+    const newWordInput = document.getElementById('newWord');
+
+    function clearOutput() {
+      output.textContent = "";
+    }
+
+    function addNewWord() {
+      const word = newWordInput.value.trim();
+      if (word !== "") {
+        addWordButton(word);
+        newWordInput.value = "";
+      }
+    }
+
+    function addWordButton(word) {
+      const btn = document.createElement('div');
+      btn.textContent = word;
+      btn.className = 'word';
+      btn.onclick = () => {
+        output.textContent += word + " ";
+      };
+      btn.style.fontSize = document.getElementById('wordSize').value + 'px';
+      buttons.appendChild(btn);
+    }
+
+    function updateWordSize(size) {
+      document.querySelectorAll('.word').forEach(btn => {
+        btn.style.fontSize = size + 'px';
+      });
+    }
+
+    function updateKeySize(size) {
+      document.querySelectorAll('.key').forEach(key => {
+        key.style.fontSize = size + 'px';
+        key.style.padding = size / 2 + 'px';
+      });
+    }
+    function removeWord() {
+        const word = newWordInput.value.trim();
+        if (word === "") return;
+
+        const buttonsList = Array.from(buttons.children);
+        for (const btn of buttonsList) {
+        if (btn.textContent.trim() === word) {
+      buttons.removeChild(btn);
+      break;
+    }
+  }
+
+  newWordInput.value = "";
+}
+
+
+    // STARTUP with just "Allo!"
+    addWordButton("Allo!");
+
+    // Build the keyboard
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    letters.split('').forEach(letter => {
+      const key = document.createElement('div');
+      key.className = 'key';
+      key.textContent = letter;
+      key.onclick = () => {
+        output.textContent += letter;
+      };
+      key.style.fontSize = document.getElementById('keySize').value + 'px';
+      keyboard.appendChild(key);
+    });
+
+    const spaceKey = document.createElement('div');
+    spaceKey.className = 'key';
+    spaceKey.textContent = "␣";
+    spaceKey.onclick = () => {
+      output.textContent += " ";
+    };
+    keyboard.appendChild(spaceKey);
+
+    const delKey = document.createElement('div');
+    delKey.className = 'key';
+    delKey.textContent = "⌫";
+    delKey.onclick = () => {
+      output.textContent = output.textContent.slice(0, -1);
+    };
+    keyboard.appendChild(delKey);
+  </script>
+</body>
+</html>

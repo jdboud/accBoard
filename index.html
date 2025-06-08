@@ -43,9 +43,9 @@
     }
     .grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+      grid-template-columns: repeat(5, 1fr);
       gap: 10px;
-      margin-bottom: 10px;
+      margin-bottom: 20px;
     }
     .word {
       background: #4a90e2;
@@ -69,10 +69,17 @@
       font-size: 0.9em;
       margin-bottom: 4px;
     }
+
     #keyboard {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(40px, 1fr));
+      display: flex;
+      flex-direction: column;
       gap: 5px;
+    }
+    .key-row {
+      display: flex;
+      justify-content: center;
+      gap: 5px;
+      flex-wrap: wrap;
     }
     .key {
       text-align: center;
@@ -81,7 +88,7 @@
       border-radius: 8px;
       user-select: none;
       padding: 10px;
-      word-wrap: break-word;
+      min-width: 40px;
     }
     .key:active {
       background: #555;
@@ -96,10 +103,8 @@
     <input type="text" id="newWord" placeholder="Add new word...">
     <button onclick="addNewWord()">+ Add</button>
     <button onclick="removeWord()">− Remove</button>
-
   </div>
 
-  <!-- Sliders -->
   <div class="slider-section">
     <label for="wordSize">Word Button Size</label>
     <input type="range" id="wordSize" min="16" max="48" value="24" onchange="updateWordSize(this.value)">
@@ -112,13 +117,42 @@
     <input type="range" id="keySize" min="10" max="36" value="20" onchange="updateKeySize(this.value)">
   </div>
 
-  <div id="keyboard"></div>
+  <div id="keyboard">
+    <div class="key-row" id="row1"></div>
+    <div class="key-row" id="row2"></div>
+    <div class="key-row" id="row3"></div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 
   <script>
     const output = document.getElementById('output');
     const buttons = document.getElementById('buttons');
-    const keyboard = document.getElementById('keyboard');
     const newWordInput = document.getElementById('newWord');
+    const row1 = document.getElementById('row1');
+    const row2 = document.getElementById('row2');
+    const row3 = document.getElementById('row3');
+
+    const STORAGE_KEY = "aac_word_list";
+
+    function saveWordsToStorage() {
+      const words = Array.from(buttons.children).map(btn => btn.textContent.trim());
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(words));
+    }
+
+    function loadWordsFromStorage() {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try {
+          const wordList = JSON.parse(saved);
+          wordList.forEach(addWordButton);
+        } catch (e) {
+          console.error("Failed to parse saved words:", e);
+        }
+      } else {
+        addWordButton("Allo!");
+      }
+    }
 
     function clearOutput() {
       output.textContent = "";
@@ -129,7 +163,24 @@
       if (word !== "") {
         addWordButton(word);
         newWordInput.value = "";
+        saveWordsToStorage();
       }
+    }
+
+    function removeWord() {
+      const word = newWordInput.value.trim();
+      if (word === "") return;
+
+      const buttonsList = Array.from(buttons.children);
+      for (const btn of buttonsList) {
+        if (btn.textContent.trim() === word) {
+          buttons.removeChild(btn);
+          saveWordsToStorage();
+          break;
+        }
+      }
+
+      newWordInput.value = "";
     }
 
     function addWordButton(word) {
@@ -155,53 +206,45 @@
         key.style.padding = size / 2 + 'px';
       });
     }
-    function removeWord() {
-        const word = newWordInput.value.trim();
-        if (word === "") return;
 
-        const buttonsList = Array.from(buttons.children);
-        for (const btn of buttonsList) {
-        if (btn.textContent.trim() === word) {
-      buttons.removeChild(btn);
-      break;
+    const layout = {
+    row1: "ABCDEFGHIJ",
+    row2: "KLMNOPQRS",
+    row3: "TUVWXYZ ␣⌫"
+    };
+
+
+    function makeKeyRow(row, chars) {
+      chars.split('').forEach(char => {
+        const key = document.createElement('div');
+        key.className = 'key';
+        key.textContent = char;
+        key.onclick = () => {
+          if (char === '⌫') {
+            output.textContent = output.textContent.slice(0, -1);
+          } else if (char === '␣') {
+            output.textContent += ' ';
+          } else {
+            output.textContent += char;
+          }
+        };
+        key.style.fontSize = document.getElementById('keySize').value + 'px';
+        row.appendChild(key);
+      });
     }
-  }
 
-  newWordInput.value = "";
-}
+    makeKeyRow(row1, layout.row1);
+    makeKeyRow(row2, layout.row2);
+    makeKeyRow(row3, layout.row3);
 
+    // Load saved words
+    loadWordsFromStorage();
 
-    // STARTUP with just "Allo!"
-    addWordButton("Allo!");
-
-    // Build the keyboard
-    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    letters.split('').forEach(letter => {
-      const key = document.createElement('div');
-      key.className = 'key';
-      key.textContent = letter;
-      key.onclick = () => {
-        output.textContent += letter;
-      };
-      key.style.fontSize = document.getElementById('keySize').value + 'px';
-      keyboard.appendChild(key);
+    // Enable drag sorting and save order on change
+    Sortable.create(buttons, {
+      animation: 150,
+      onSort: () => saveWordsToStorage()
     });
-
-    const spaceKey = document.createElement('div');
-    spaceKey.className = 'key';
-    spaceKey.textContent = "␣";
-    spaceKey.onclick = () => {
-      output.textContent += " ";
-    };
-    keyboard.appendChild(spaceKey);
-
-    const delKey = document.createElement('div');
-    delKey.className = 'key';
-    delKey.textContent = "⌫";
-    delKey.onclick = () => {
-      output.textContent = output.textContent.slice(0, -1);
-    };
-    keyboard.appendChild(delKey);
   </script>
 </body>
 </html>
